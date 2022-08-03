@@ -198,7 +198,7 @@ def TextDetection(video):
 
     #Collect timestamps so you can crop those frames
     for x in bbrespFull:
-        if (x['TextDetection']['DetectedText'].isupper() and len(x['TextDetection']['DetectedText']) > 5 and len(x['TextDetection']['DetectedText']) < 9 and x['TextDetection']['Type'] == 'LINE'):
+        if (x['TextDetection']['DetectedText'].isupper() and len(x['TextDetection']['DetectedText']) > 5 and len(x['TextDetection']['DetectedText']) < 9 and x['TextDetection']['Type'] == 'WORD'):
             ts_list.append(x['Timestamp'])
         else:
             continue
@@ -208,7 +208,7 @@ def TextDetection(video):
         frameCrop(bucket, video, ts)
         for box in bbrespFull:
             if (box['TextDetection']['DetectedText'].isupper() and len(box['TextDetection']['DetectedText']) > 5 
-            and len(box['TextDetection']['DetectedText']) < 9 and box['TextDetection']['Type'] == 'LINE' and box['Timestamp'] == ts):
+            and len(box['TextDetection']['DetectedText']) < 9 and box['TextDetection']['Type'] == 'WORD' and box['Timestamp'] == ts):
                 bbox = box['TextDetection']
                 fName = 'frame'+str(ts)+'.jpg'
                 print("FileName is: ",fName)
@@ -218,8 +218,20 @@ def TextDetection(video):
 
     with open ('videoTextDetection.json', 'w') as outfile:
         json.dump(bboxresp, outfile)
-    analyzer.DeleteTopicandQueue()
+    
+    clist = list()
+    for i in bbrespFull:
+        for j in i['TextDetections']:
+            if (j['TextDetection']['Type'] == 'WORD' and j['TextDetection']['Confidence'] > 95 and len(j['TextDetection']['DetectedText']) > 5 and len(j['TextDetection']['DetectedText']) < 9):
+                clist.append(j['TextDetection']['DetectedText'])
+    
+    occurrence = {item: clist.count(item) for item in clist}
 
+    with open("licenseplate_summary.txt", "w") as f:
+        for k,v in occurrence.items():
+            f.write(str(v) + " " + str(k) + "\n")
+
+    analyzer.DeleteTopicandQueue()
     return bbrespFull
 
 # if __name__ == "__main__":
